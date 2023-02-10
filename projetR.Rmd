@@ -1,0 +1,193 @@
+---
+title: "projetDM"
+author: "Hajer Abessi  Nourchene Dridi    Amira Baccouch"
+date: "2022-12-28"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+On dispose de données sur les indicateurs du développement de la Tunisie depuis 1992 jusqu’à 2021.
+Les variables sont : PIB par habitant ; Importations de biens et de services ; Exportations de biens et
+de services ; Épargne brute ; Dépenses de consommation finale ; RNB (revenu nette brute) ; dette
+extérieure.
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+base<-read.csv2("D:/mastere/ESC/DM/projet/Data1.csv", check.names = F ,row.names="Annee")
+print(head(base))
+attach(base)
+str(base)
+dim(base)
+summary(base)
+pairs(base[,1:7], col = "#D90423", main = " Pair Plots " , 
+      labels = c("PIB/H", "IBS", "EBS","EB","DCF","RNB","TDE"))
+```
+
+Ici, dans le graphique de paires ci-dessus, les boîtes diagonales affichent le nom des variables.
+
+Toutes les autres boîtes affichent un nuage de points entre chaque combinaison de variables par paires.
+
+exemple, la deuxième boîte affiche un nuage de points entre PIB/H (PIB par habitant) et IBS (Importations de biens et de services) tandis que la troisième boîte affiche un nuage de points entre PIB/H (PIB par habitant) et
+EBS ( Exportations de biens et de services).
+
+```{r}
+matrice.corr<-cor(base[,1:7])
+matrice.corr
+det(matrice.corr)
+```
+
+La matrice de corrélation des variables :
+La corrélation entre PIB et RNB est forte et positive (0.9845)
+
+La corrélation entre épargne brute et dette extérieur est forte et négative (-0.7459).
+
+On remarque que, La variable dette extérieure se distingue car elle est corrélée négativement avec
+toutes les autres variables.
+
+
+```{r}
+
+res.pca<-PCA(base,scale.unit=TRUE,ncp=5,graph=FALSE)
+#valeur propre+visualisation
+valeur.propre<-get_eigenvalue(res.pca)
+valeur.propre
+fviz_eig(res.pca,addlabels=T ,xlim=c(0,06),ylim=c(0,50),  barfill="#DDC1FA", linecolor ="#D90413")
+
+```
+
+Le critère de Kaiser nous conduit à sélectionner deux axes, expliquant 83% de l’inertie totale du
+nuage. On conserve les axes dont les valeurs propres sont supérieures à 1
+Étant donné l'importance du taux d'inertie cumulé par rapport au nombre de variables initial qui est
+7.
+
+On peut donc retenir les deux premiers axes.
+
+```{r}
+#variables
+res.var<-get_pca_var(res.pca)
+res.var
+# Coordonnées
+head(res.var$coord)
+# Contributions des variables
+head(res.var$contrib)
+```
+Interprétation des axes :
+
+Axe1 :
+
+Coté positive :
+Importations de biens et de services ;
+Exportations de biens et de services ;
+Épargne;
+
+Coté négative :
+Dette extérieure
+
+-> L’axe 1 oppose les variables importations et exportation de biens et services et l’épargne brute 
+
+Axe2 :
+
+Coté positive :
+Dépenses de consommation finale ;
+RNB (revenu nette brute) ;
+PIB par habitant ;
+
+Coté négative :
+_
+
+-> L’axe 2 oppose les variables Dépenses de consommation finale et RNB (revenu nette brute) 
+
+```{r}
+
+#cercle de corrélation en fonction de leurs valeurs de cos2:
+fviz_pca_var(res.pca,col.var = "cos2", gradient.cols = c("#F6398A", "#C342EB", "#6239F6"),
+             ggtheme =theme_minimal())
+```
+Le graphique ci-dessus est également connu sous le nom de graphique de corrélation des variables.
+Il montre les relations entre toutes les variables.
+
+Il peut être interprété comme suit :
+
+Les variables : Importations de biens et de services ; Exportations de biens et de services ;
+Épargne sont positivement corrélées.
+
+Les variables négativement corrélées sont positionnées sur les côtés opposés de l’origine du
+graphique.
+
+La distance entre les variables et l’origine mesure la qualité de représentation des variables.
+
+Les variables qui sont loin de l’origine sont bien représentées par l’ACP.
+
+```{r}
+#Qualité de représentation
+head(res.var$cos2)
+
+fviz_cos2(res.pca, choice = "var", axes = 1:2 , fill = "#DDC1FA")
+#Description des dimensions
+res.desc <- dimdesc(res.pca, axes = c(1,2), proba = 0.05)
+# Description de la dimension 1
+res.desc$Dim.1
+# Contributions des variables à Pc1 et PC2
+fviz_contrib(res.pca, choice = "var", axes = 1:2, top = 8,fill = "#DDC1FA")
+#Graphique des individus
+ind <- get_pca_ind(res.pca)
+ind
+
+```
+Le graphique ci-dessus représente la corrélation entre les individus ( dans notre cas se sont des
+années )
+
+Axe 1 :
+
+Coté positive :
+2006, 2007, 2008, 2010, 2011, 2012, 2018, 2019, 2021
+Coté négative :
+1992, 1993, 1994, 1995, 1996, 2001, 2005
+
+Axe 2 :
+
+Coté positive :
+2009, 2013, 2014, 2015, 2016, 2017
+
+Coté négative :
+1997,1998, 1999, 2002, 2003, 2004, 2020
+
+```{r}
+
+# Coordonnées des individus
+head(ind$coord)
+# Qualité des individus
+head(ind$cos2)
+# Contributions des individus
+head(ind$contrib)
+
+# le graphique des individus en fonction de leurs valeurs de cos2:
+
+fviz_pca_ind (res.pca, col.ind = "cos2",  repel = TRUE,pointsize = "cos2",
+ gradient.cols = c("#F6398A", "#C342EB", "#6239F6"),ggtheme =theme_minimal() )
+
+#barplot de la qualité de représentation (cos2) des individus
+
+fviz_cos2(res.pca, choice = "ind", axes = 1:2 , fill = "#DDC1FA")
+
+# Contribution totale sur PC1 et PC2
+fviz_contrib(res.pca, choice = "ind", axes = 1:2, top = 8,fill = "#DDC1FA")
+
+#biplot des individus et des variables
+fviz_pca_biplot(res.pca, repel = TRUE,
+                col.var = "#EB738E", # Couleur des variables
+                col.ind = "#9E3AD6"  # Couleur des individues
+                )
+
+```
+
+L’axe 1 oppose donc les années 1992 à 2005, marquées par un poids important dans la structure de leur bilan au niveau des Dette extérieure, et un poids faible des postes importations et exportation de biens et services et l’épargne brute aux années 2006 à 2019 (à l’exception de 13,14,15,16,17), qui présentent dans l’axe2.
+
+L’axe 2 oppose les années, (voir graphique ci-dessous) caractérisées par un poids faible des postes Dépenses de consommation finale et RNB (revenu nette brute) et PIB par habitant
+
